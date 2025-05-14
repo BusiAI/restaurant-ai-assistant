@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ restaurant_name }} Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 text-gray-900">
+    <div class="max-w-4xl mx-auto p-6">
+        <h1 class="text-3xl font-bold mb-6">📋 {{ restaurant_name }} Orders Dashboard</h1>
+
+        {% if orders %}
+            <div class="grid grid-cols-1 gap-4">
+                {% for order in orders %}
+                    <div class="bg-white p-4 rounded-xl shadow">
+                        <p><strong>Customer Name:</strong> {{ order.customer_name }}</p>
+                        <p><strong>Phone:</strong> {{ order.phone_number }}</p>
+                        <p><strong>Address:</strong> {{ order.delivery_address }}</p>
+                        <p><strong>Collection or Delivery:</strong> {{ order.collection_or_delivery }}</p>
+                        <p><strong>Items:</strong> {{ order.order_details }}</p>
+                        <p><strong>Time:</strong> {{ order.timestamp }}</p>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p>No orders yet.</p>
+        {% endif %}
+    </div>
+</body>
+</html>
