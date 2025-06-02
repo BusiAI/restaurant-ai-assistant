@@ -5,10 +5,10 @@ import openai
 import os
 
 app = Flask(__name__)
-app.secret_key = "your_secret_key_here"
+app.secret_key = "something-super-fucking-secret"
 
 # Load OpenAI API Key from environment
-openai.api_key = os.getenv("OPENAI_API_KEY")
+openai.api_key = os.getenv("sk-...xV8A")
 
 # ====== DATABASE SETUP ======
 def get_db_connection():
