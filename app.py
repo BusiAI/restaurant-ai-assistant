@@ -1,3 +1,6 @@
+import logging
+logging.basicConfig(level=logging.DEBUG)
+
 from flask import Flask, request, render_template, redirect, session
 from twilio.twiml.voice_response import VoiceResponse
 import sqlite3
@@ -9,7 +12,7 @@ app.secret_key = os.getenv("SECRET_KEY", "fallback_secret")
 
 
 # Load OpenAI API Key from environment
-openai.api_key = os.getenv("sk-...xV8A")
+openai.api_key = os.getenv("OPENAI_API_KEY")
 
 # ====== DATABASE CONNECTION ======
 def get_db_connection():
