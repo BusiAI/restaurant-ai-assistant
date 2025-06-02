@@ -5,7 +5,7 @@ import openai
 import os
 
 app = Flask(__name__)
-app.secret_key = os.getenv("something-super-fucking-secret", "fallback_secret")
+app.secret_key = os.getenv("SECRET_KEY", "fallback_secret")
 
 
 # Load OpenAI API Key from environment
