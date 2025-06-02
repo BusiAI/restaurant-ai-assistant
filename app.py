@@ -1,16 +1,17 @@
-from flask import Flask, request, render_template, redirect, session, url_for
+from flask import Flask, request, render_template, redirect, session
 from twilio.twiml.voice_response import VoiceResponse
 import sqlite3
 import openai
 import os
 
 app = Flask(__name__)
-app.secret_key = "something-super-fucking-secret"
+app.secret_key = os.getenv("something-super-fucking-secret", "fallback_secret")
+
 
 # Load OpenAI API Key from environment
 openai.api_key = os.getenv("sk-...xV8A")
 
-# ====== DATABASE SETUP ======
+# ====== DATABASE CONNECTION ======
 def get_db_connection():
     conn = sqlite3.connect("orders.db")
     conn.row_factory = sqlite3.Row
@@ -24,7 +25,10 @@ def login():
         password = request.form["password"]
 
         conn = get_db_connection()
-        restaurant = conn.execute("SELECT * FROM restaurants WHERE name = ? AND password = ?", (restaurant_name, password)).fetchone()
+        restaurant = conn.execute(
+            "SELECT * FROM restaurants WHERE name = ? AND password = ?",
+            (restaurant_name, password)
+        ).fetchone()
         conn.close()
 
         if restaurant:
@@ -32,8 +36,10 @@ def login():
             return redirect("/dashboard")
         else:
             return render_template("login.html", error="Invalid credentials")
+
     return render_template("login.html")
 
+# ====== DASHBOARD ======
 @app.route("/dashboard")
 def dashboard():
     if "restaurant" not in session:
@@ -41,10 +47,14 @@ def dashboard():
 
     restaurant = session["restaurant"]
     conn = get_db_connection()
-    orders = conn.execute("SELECT * FROM orders WHERE restaurant = ? ORDER BY id DESC", (restaurant,)).fetchall()
+    orders = conn.execute(
+        "SELECT * FROM orders WHERE restaurant = ? ORDER BY id DESC",
+        (restaurant,)
+    ).fetchall()
     conn.close()
     return render_template("dashboard.html", restaurant=restaurant, orders=orders)
 
+# ====== LOGOUT ======
 @app.route("/logout")
 def logout():
     session.clear()
@@ -54,7 +64,7 @@ def logout():
 def home():
     return redirect("/login")
 
-# ====== TWILIO WEBHOOK ======
+# ====== TWILIO VOICE WEBHOOK ======
 @app.route("/voice", methods=["POST"])
 def voice():
     response = VoiceResponse()
@@ -62,27 +72,27 @@ def voice():
     caller = request.form.get("From", "Unknown")
     transcript = request.form.get("SpeechResult", "")
 
-    # Prompt design for AI
-    prompt = f"""You are taking an order for a restaurant. The user said: '{transcript}'.
-Respond clearly, and ask for delivery or collection, then confirm the address or order.
-If they mention allergies, be cautious. Only confirm the order after clarifying everything."""
+    prompt = f"""You are taking an order for a restaurant. The customer said: '{transcript}'.
+Respond clearly, ask if they want delivery or collection, and confirm details. Mention allergies if needed."""
 
     try:
         ai_result = openai.ChatCompletion.create(
             model="gpt-4",
             messages=[
-                {"role": "system", "content": "You are a friendly phone assistant taking food orders."},
+                {"role": "system", "content": "You are a helpful food ordering assistant."},
                 {"role": "user", "content": transcript}
             ]
         )
         ai_response = ai_result["choices"][0]["message"]["content"]
-    except Exception as e:
-        ai_response = "Sorry, there was an error processing your order. Please try again later."
+    except Exception:
+        ai_response = "Sorry, there was a problem. Please call again shortly."
 
-    # Store to database
+    # Save order
     conn = get_db_connection()
-    conn.execute("INSERT INTO orders (restaurant, customer_number, order_text) VALUES (?, ?, ?)",
-                 ("Pizza Palace", caller, transcript + " | " + ai_response))
+    conn.execute(
+        "INSERT INTO orders (restaurant, customer_number, order_text) VALUES (?, ?, ?)",
+        ("Pizza Palace", caller, transcript + " | " + ai_response)
+    )
     conn.commit()
     conn.close()
 
@@ -90,7 +100,7 @@ If they mention allergies, be cautious. Only confirm the order after clarifying 
     response.hangup()
     return str(response)
 
-# ====== RENDER/PRODUCTION ======
+# ====== RENDER DEPLOYMENT ======
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
